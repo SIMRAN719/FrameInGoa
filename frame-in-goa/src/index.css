@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+:root {
+  --goa-yellow: #f5c242;
+  --goa-yellow-deep: #f2c230;
+  --goa-orange: #f26b21;
+  --goa-orange-deep: #e85d2b;
+  --goa-green: #2e9e4f;
+  --goa-green-deep: #1f4b3f;
+  --goa-cream: #fdf3d9;
+  --goa-sand: #ffdd8a;
+  --goa-plum: #e24e9c;
+  --goa-ink: #201206;
+  --goa-ink-soft: #4a3420;
+
+  --font-display: 'Baloo 2', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--goa-ink);
+  background: linear-gradient(160deg, var(--goa-cream) 0%, var(--goa-sand) 45%, var(--goa-yellow) 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+::selection {
+  background: var(--goa-orange);
+  color: white;
+}
