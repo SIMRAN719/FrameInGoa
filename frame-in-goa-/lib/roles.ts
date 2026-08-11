@@ -1,0 +1,230 @@
+const roleData = [
+  {
+    "name": "AI ENGINEER",
+    "titles": [
+      "THE MODEL WHISPERER",
+      "THE PROMPT ALCHEMIST",
+      "THE INFERENCE PILOT",
+      "THE VECTOR CARTOGRAPHER",
+      "THE AGENT ARCHITECT",
+      "THE TOKEN TAMER",
+      "THE RAG RANGER",
+      "THE CONTEXT CRAFTER",
+      "THE LATENCY HUNTER",
+      "THE EVAL ENGINEER",
+      "THE EMBEDDING EXPLORER",
+      "THE MODEL TUNER",
+      "THE DATA CURATOR",
+      "THE SYNTHETIC DREAMER",
+      "THE AI SHIPPER"
+    ]
+  },
+  {
+    "name": "FULL STACK ENGINEER",
+    "titles": [
+      "THE PRODUCT SHIPPER",
+      "THE STACK WIZARD",
+      "THE API ALCHEMIST",
+      "THE FRONTEND FORGER",
+      "THE BACKEND BUILDER",
+      "THE DEPLOYMENT PILOT",
+      "THE WEB HACKER",
+      "THE CODE SHIPPER",
+      "THE FEATURE FACTORY",
+      "THE SYSTEM MAKER",
+      "THE DATABASE DIVER",
+      "THE PLATFORM BUILDER",
+      "THE INTEGRATION ENGINEER",
+      "THE DEBUGGING MONK",
+      "THE FULL CYCLE BUILDER"
+    ]
+  },
+  {
+    "name": "FRONTEND ENGINEER",
+    "titles": [
+      "THE PIXEL PUSHER",
+      "THE UI FORGER",
+      "THE BROWSER TINKERER",
+      "THE INTERACTION ENGINEER",
+      "THE CSS ALCHEMIST",
+      "THE COMPONENT CARTOGRAPHER",
+      "THE ANIMATION SMUGGLER",
+      "THE ACCESSIBILITY ADVOCATE",
+      "THE DESIGN SYSTEM SMITH",
+      "THE REACT RANGER",
+      "THE INTERFACE SHIPPER",
+      "THE VISUAL DEBUGGER"
+    ]
+  },
+  {
+    "name": "BACKEND ENGINEER",
+    "titles": [
+      "THE API ALCHEMIST",
+      "THE SERVICE SMITH",
+      "THE DATABASE DIVER",
+      "THE QUEUE TAMER",
+      "THE SERVER SHIPPER",
+      "THE DISTRIBUTED THINKER",
+      "THE CACHE COMMANDER",
+      "THE MICROSERVICE MECHANIC",
+      "THE LOG DETECTIVE",
+      "THE DATA PIPELINE PILOT",
+      "THE SYSTEMS BUILDER",
+      "THE ENDPOINT ENGINEER"
+    ]
+  },
+  {
+    "name": "DATA SCIENTIST",
+    "titles": [
+      "THE DATA DETECTIVE",
+      "THE PATTERN HUNTER",
+      "THE STATISTICS SAGE",
+      "THE NOTEBOOK NOMAD",
+      "THE FEATURE FORGER",
+      "THE MODEL EXPLORER",
+      "THE SIGNAL SEEKER",
+      "THE EXPERIMENT RUNNER",
+      "THE INSIGHT MINER",
+      "THE FORECASTER",
+      "THE PYTHON ALCHEMIST",
+      "THE EVIDENCE ENGINEER"
+    ]
+  },
+  {
+    "name": "DATA ENGINEER",
+    "titles": [
+      "THE PIPELINE PILOT",
+      "THE ETL TINKERER",
+      "THE WAREHOUSE WRANGLER",
+      "THE STREAM SHIPPER",
+      "THE SCHEMA SMITH",
+      "THE DATA PLUMBER",
+      "THE BATCH BENDER",
+      "THE LAKEHOUSE BUILDER",
+      "THE SQL SORCERER",
+      "THE INGESTION ENGINEER"
+    ]
+  },
+  {
+    "name": "DEVOPS ENGINEER",
+    "titles": [
+      "THE DEPLOYMENT PILOT",
+      "THE CONTAINER CAPTAIN",
+      "THE PIPELINE PIRATE",
+      "THE INFRA FORGER",
+      "THE CLOUD TAMER",
+      "THE RELEASE ENGINEER",
+      "THE AUTOMATION ALCHEMIST",
+      "THE OBSERVABILITY OWL",
+      "THE UPTIME GUARDIAN",
+      "THE CONFIG CURATOR"
+    ]
+  },
+  {
+    "name": "CYBERSECURITY ENGINEER",
+    "titles": [
+      "THE THREAT HUNTER",
+      "THE PACKET SNIFFER",
+      "THE SECURITY SHIPPER",
+      "THE ZERO DAY ZAPPER",
+      "THE RED TEAM RANGER",
+      "THE BLUE TEAM BUILDER",
+      "THE CRYPTO CRAFTER",
+      "THE VULN HUNTER",
+      "THE SOC SCOUT",
+      "THE DEFENSE ENGINEER"
+    ]
+  },
+  {
+    "name": "MOBILE ENGINEER",
+    "titles": [
+      "THE APP SHIPPER",
+      "THE SWIFT TINKERER",
+      "THE ANDROID ALCHEMIST",
+      "THE SCREEN FORGER",
+      "THE MOBILE MAKER",
+      "THE DEVICE DEBUGGER",
+      "THE APP ARCHITECT",
+      "THE POCKET BUILDER"
+    ]
+  },
+  {
+    "name": "CLOUD ENGINEER",
+    "titles": [
+      "THE CLOUD CARTOGRAPHER",
+      "THE INFRA PILOT",
+      "THE SERVERLESS SHIPPER",
+      "THE REGION RANGER",
+      "THE CLOUD FORGER",
+      "THE K8S CAPTAIN",
+      "THE SCALE SEEKER",
+      "THE EDGE ENGINEER"
+    ]
+  },
+  {
+    "name": "ML ENGINEER",
+    "titles": [
+      "THE MODEL SHIPPER",
+      "THE TRAINING TAMER",
+      "THE FEATURE ENGINEER",
+      "THE GPU WRANGLER",
+      "THE INFERENCE PILOT",
+      "THE MODEL DEBUGGER",
+      "THE LOSS FUNCTION LOVER",
+      "THE ML FORGER"
+    ]
+  },
+  {
+    "name": "PRODUCT ENGINEER",
+    "titles": [
+      "THE PROBLEM SOLVER",
+      "THE FEATURE SHIPPER",
+      "THE MVP MACHINE",
+      "THE USER JOURNEY BUILDER",
+      "THE PRODUCT HACKER",
+      "THE FEEDBACK LOOP",
+      "THE 0-TO-1 BUILDER",
+      "THE OUTCOME ENGINEER"
+    ]
+  },
+  {
+    "name": "SOFTWARE ENGINEER",
+    "titles": [
+      "THE CODE SHIPPER",
+      "THE REFACTOR RANGER",
+      "THE BUG HUNTER",
+      "THE SYSTEM THINKER",
+      "THE ALGORITHM ALCHEMIST",
+      "THE CLEAN CODE CAPTAIN",
+      "THE BUILD BREAKER",
+      "THE SOFTWARE SMITH"
+    ]
+  },
+  {
+    "name": "UI/UX DESIGNER",
+    "titles": [
+      "THE PIXEL POET",
+      "THE FLOW FORGER",
+      "THE INTERACTION CARTOGRAPHER",
+      "THE WIREFRAME WIZARD",
+      "THE TYPOGRAPHY TINKERER",
+      "THE VISUAL ALCHEMIST",
+      "THE EXPERIENCE ENGINEER",
+      "THE DESIGN SHIPPER"
+    ]
+  },
+  {
+    "name": "GAME DEVELOPER",
+    "titles": [
+      "THE GAME LOOP GURU",
+      "THE PIXEL PLAYER",
+      "THE ENGINE TAMER",
+      "THE LEVEL BUILDER",
+      "THE MECHANIC MAKER",
+      "THE SHADER SHIPPER",
+      "THE PLAYTEST PIRATE",
+      "THE GAME SYSTEMS SMITH"
+    ]
+  }
+] as const;
+export default roleData;
