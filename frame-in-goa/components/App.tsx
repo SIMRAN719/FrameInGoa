@@ -1,6 +1,6 @@
 "use client";
 import {useMemo,useRef,useState,useEffect} from "react";
-import {ArrowLeft,ArrowRight,Check,Download,ImagePlus,Minus,Plus,RefreshCw,Upload,Users,UserRound,ZoomIn,ZoomOut} from "lucide-react";
+import {ArrowLeft,ArrowRight,Download,ImagePlus,RefreshCw,Upload,Users,UserRound,ZoomIn,ZoomOut} from "lucide-react";
 import roleData from "../lib/roles";
 import {makeFrame,Member,ImageAdjust} from "../lib/frame";
 
@@ -21,6 +21,7 @@ export default function App(){
  const [role,setRole]=useState("AI ENGINEER");
  const [title,setTitle]=useState("THE MODEL WHISPERER");
  const [busy,setBusy]=useState(false);
+ const [uploadError,setUploadError]=useState("");
  const [drag,setDrag]=useState<{x:number;y:number}|null>(null);
  const input=useRef<HTMLInputElement>(null);
  const active=members.find(m=>m.id===activeId) || members[0];
@@ -34,23 +35,44 @@ export default function App(){
  function randomTitle(){const a=current.titles;setTitle(a[Math.floor(Math.random()*a.length)])}
  function addMember(){if(members.length>=5)return;const id=Math.max(...members.map(m=>m.id))+1;setMembers(ms=>[...ms,emptyMember(id)]);setActiveId(id)}
  function removeMember(id:number){if(members.length<=1)return;const next=members.filter(m=>m.id!==id);setMembers(next);setActiveId(next[0].id)}
- function upload(files:FileList|null){
+ async function upload(files:FileList|null){
    if(!files)return;
+   setUploadError("");
    const chosen=Array.from(files).slice(0,mode==="team"?5:1);
-   chosen.forEach((file,i)=>{if(!/image\/(jpeg|png|webp)/i.test(file.type))return;const r=new FileReader();r.onload=()=>{if(mode==="solo"){updateMember(1,{photo:String(r.result)})}else{const target=members[i]||emptyMember(Math.max(...members.map(m=>m.id))+i+1);if(!members[i])setMembers(ms=>[...ms,target]);updateMember(target.id,{photo:String(r.result)})}};r.readAsDataURL(file)});
+   for(let i=0;i<chosen.length;i++){
+     const file=chosen[i];
+     try{
+       let source:Blob=file;
+       if(/image\/hei[cf]/i.test(file.type)||/\.hei[cf]$/i.test(file.name)){
+         const {default:heic2any}=await import("heic2any");
+         source=await heic2any({blob:file,toType:"image/jpeg",quality:.92}) as Blob;
+       }else if(!/image\/(jpeg|png|webp)/i.test(file.type)){
+         throw new Error("unsupported");
+       }
+       const data=await new Promise<string>((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=()=>reject(new Error("read"));r.readAsDataURL(source)});
+       if(mode==="solo") updateMember(1,{photo:data});
+       else {const target=members[i]||emptyMember(Math.max(...members.map(m=>m.id))+i+1);if(!members[i])setMembers(ms=>[...ms,target]);updateMember(target.id,{photo:data})}
+     }catch{setUploadError(`${file.name} could not be read. Try a JPG or PNG photo.`)}
+   }
  }
  function startDrag(e:React.PointerEvent){if(!active?.photo)return;setDrag({x:e.clientX-active.adjust.x,y:e.clientY-active.adjust.y});(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)}
  function moveDrag(e:React.PointerEvent){if(!drag||!active)return;updateAdjust(active.id,{x:e.clientX-drag.x,y:e.clientY-drag.y})}
  function stopDrag(){setDrag(null)}
  async function download(){setBusy(true);const b=await makeFrame({members,displayName:mode==="team"?(teamName||"YOUR TEAM"):(members[0].name||"YOUR NAME"),role,title,mode,format});const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`frame-in-goa-${format}.png`;a.click();URL.revokeObjectURL(u);setBusy(false)}
- function share(){const t=encodeURIComponent(`${mode==="team"?"Our team":"I’m"} framed for Hacker House Goa 2026 🌴\\n${title}\\n#FrameInGoa #HackerHouseGoa`);window.open(`https://twitter.com/intent/tweet?text=${t}`,"_blank","noopener,noreferrer")}
+ async function share(){
+   const popup=window.open("about:blank","_blank","noopener,noreferrer");
+   await download();
+   const t=encodeURIComponent(`${mode==="team"?(teamName||"Our team"):(members[0].name||"I")} is framed for Hacker House Goa 2026 🌴\\n${title}\\n#FrameInGoa #HackerHouseGoa`);
+   if(popup) popup.location.href=`https://twitter.com/intent/tweet?text=${t}`;
+   else window.open(`https://twitter.com/intent/tweet?text=${t}`,"_blank","noopener,noreferrer");
+ }
 
  return <div className="app">
   <Header onHome={()=>reset()} onStart={()=>go("setup")}/>
   {screen==="home"&&<Home onStart={()=>go("setup")}/>}
   {screen!=="home"&&screen!=="preview"&&<WizardTop screen={screen} onBack={()=>screen==="setup"?reset():screen==="people"?go("setup"):screen==="craft"?go("people"):go("craft")}/>}
   {screen==="setup"&&<Setup mode={mode} setMode={setMode} format={format} setFormat={setFormat} next={()=>go("people")}/>}
-  {screen==="people"&&<People mode={mode} members={members} activeId={activeId} setActiveId={setActiveId} teamName={teamName} setTeamName={setTeamName} addMember={addMember} removeMember={removeMember} input={input} upload={upload} next={()=>go("craft")}/>}
+  {screen==="people"&&<People mode={mode} members={members} activeId={activeId} setActiveId={setActiveId} teamName={teamName} setTeamName={setTeamName} addMember={addMember} removeMember={removeMember} input={input} upload={upload} uploadError={uploadError} updateMember={updateMember} next={()=>go("craft")}/>} 
   {screen==="craft"&&<Craft role={role} pickRole={pickRole} title={title} randomTitle={randomTitle} current={current} next={()=>go("adjust")}/>}
   {screen==="adjust"&&<Adjust mode={mode} members={members} active={active} setActiveId={setActiveId} updateAdjust={updateAdjust} startDrag={startDrag} moveDrag={moveDrag} stopDrag={stopDrag} photoInput={input} upload={upload} next={()=>go("preview")}/>}
   {screen==="preview"&&<Preview members={members} mode={mode} format={format} teamName={teamName} role={role} title={title} busy={busy} download={download} share={share} again={()=>go("adjust")} home={reset}/>}
@@ -75,13 +97,13 @@ function Setup({mode,setMode,format,setFormat,next}:any){return <main className=
  <button className={`choice ${mode==="team"?"selected":""}`} onClick={()=>setMode("team")}><Users/><small>TEAM</small><strong>THE CREW</strong><span>Up to five builders in one shared frame.</span></button>
  </div><div className="format-row"><div><div className="eyebrow">OUTPUT</div><h3>WHERE'S IT GOING?</h3></div><div className="format-buttons"><button className={format==="profile"?"active":""} onClick={()=>setFormat("profile")}>PROFILE PIC <span>1200×1200</span></button><button className={format==="post"?"active":""} onClick={()=>setFormat("post")}>SOCIAL POST <span>1200×1500</span></button></div></div><button className="next-btn" onClick={next}>CONTINUE <ArrowRight/></button></main>}
 
-function People({mode,members,activeId,setActiveId,teamName,setTeamName,addMember,removeMember,input,upload,next}:any){return <main className="wizard-page people-page"><div className="wizard-title"><div className="eyebrow">02 / PEOPLE</div><h2>{mode==="team"?"BUILD THE":"UPLOAD"}<br/><em>{mode==="team"?"CREW.":"PORTRAIT."}</em></h2><p>{mode==="team"?"Add up to five builders. You’ll adjust each portrait in the next step.":"Upload a clear photo. You’ll get full control over positioning next."}</p></div>{mode==="team"&&<input className="team-name" value={teamName} onChange={e=>setTeamName(e.target.value)} placeholder="TEAM NAME / OPTIONAL"/>}<div className="member-list">{members.map((m:Member,i:number)=><div className={`member-row ${activeId===m.id?"active":""}`} key={m.id} onClick={()=>setActiveId(m.id)}><div className="member-thumb">{m.photo?<img src={m.photo}/>:<Upload size={18}/>}</div><div><b>{mode==="team"?`BUILDER ${String(i+1).padStart(2,"0")}`:"YOUR PHOTO"}</b><span>{m.photo?"READY TO ADJUST":"NOT UPLOADED"}</span></div>{mode==="team"&&members.length>1&&<button onClick={(e)=>{e.stopPropagation();removeMember(m.id)}}>REMOVE</button>}</div>)}</div><div className="people-actions"><button className="upload-btn" onClick={()=>input.current?.click()}><ImagePlus/> {mode==="team"?"UPLOAD / REPLACE PHOTOS":"UPLOAD PHOTO"}</button>{mode==="team"&&members.length<5&&<button className="add-btn" onClick={addMember}>+ ADD BUILDER</button>}<input ref={input} hidden type="file" multiple={mode==="team"} accept="image/jpeg,image/png,image/webp" onChange={e=>upload(e.target.files)}/></div><button className="next-btn" disabled={!members.some((m:Member)=>m.photo)} onClick={next}>ADJUST PHOTOS <ArrowRight/></button></main>}
+function People({mode,members,activeId,setActiveId,teamName,setTeamName,addMember,removeMember,input,upload,uploadError,updateMember,next}:any){return <main className="wizard-page people-page"><div className="wizard-title"><div className="eyebrow">02 / PEOPLE</div><h2>{mode==="team"?"BUILD THE":"UPLOAD"}<br/><em>{mode==="team"?"CREW.":"PORTRAIT."}</em></h2><p>{mode==="team"?"Add up to five builders. Every portrait gets a name and a stack before export.":"Add your name and a clear photo. You’ll get full control over positioning next."}</p></div>{mode==="team"&&<input className="team-name" value={teamName} onChange={e=>setTeamName(e.target.value)} placeholder="TEAM NAME / OPTIONAL"/>}<div className="member-list">{members.map((m:Member,i:number)=><div className={`member-row ${activeId===m.id?"active":""}`} key={m.id} onClick={()=>setActiveId(m.id)}><div className="member-thumb">{m.photo?<img src={m.photo} alt=""/>:<Upload size={18}/>}</div><div className="member-details"><input className="member-name" value={m.name} onClick={e=>e.stopPropagation()} onChange={e=>updateMember(m.id,{name:e.target.value})} placeholder={mode==="team"?`BUILDER ${String(i+1).padStart(2,"0")} NAME`:"YOUR NAME"} maxLength={32}/><span>{m.photo?"READY TO ADJUST":"PHOTO REQUIRED"}</span></div>{mode==="team"&&members.length>1&&<button onClick={(e)=>{e.stopPropagation();removeMember(m.id)}}>REMOVE</button>}</div>)}</div><div className="people-actions"><button className="upload-btn" onClick={()=>input.current?.click()}><ImagePlus/> {mode==="team"?"UPLOAD / REPLACE PHOTOS":"UPLOAD PHOTO"}</button>{mode==="team"&&members.length<5&&<button className="add-btn" onClick={addMember}>+ ADD BUILDER</button>}<input ref={input} hidden type="file" multiple={mode==="team"} accept="image/*,.heic,.heif" onChange={e=>upload(e.target.files)}/></div>{uploadError&&<p className="upload-error">{uploadError}</p>}<button className="next-btn" disabled={!members.some((m:Member)=>m.photo)&&!members.some((m:Member)=>m.name.trim())} onClick={next}>ADJUST PHOTOS <ArrowRight/></button></main>}
 
 function Craft({role,pickRole,title,randomTitle,current,next}:any){return <main className="wizard-page craft-page"><div className="wizard-title"><div className="eyebrow">03 / CRAFT</div><h2>NAME<br/><em>THE BUILDER.</em></h2><p>Your role shapes the builder title. Keep changing it until it sounds like you.</p></div><label>WHAT DO YOU BUILD?<div className="select-wrap"><select value={role} onChange={e=>pickRole(e.target.value)}>{allRoles.map(r=><option key={r.name}>{r.name}</option>)}</select></div></label><div className="title-card"><span>BUILDER TITLE</span><strong>{title}</strong><button onClick={randomTitle}><RefreshCw size={16}/> CHANGE</button></div><div className="role-note">{current.titles.length} titles in this role family · 100+ roles available</div><button className="next-btn" onClick={next}>ADJUST PHOTO <ArrowRight/></button></main>}
 
 function Adjust({mode,members,active,setActiveId,updateAdjust,startDrag,moveDrag,stopDrag,photoInput,upload,next}:any){return <main className="adjust-page"><div className="adjust-side"><div className="eyebrow">04 / ADJUST</div><h2>GET THE<br/><em>SHOT RIGHT.</em></h2><p>Drag directly on the portrait. Use the slider for scale. Your exact crop is saved to the final export.</p>{mode==="team"&&<div className="adjust-members">{members.map((m:Member,i:number)=><button className={m.id===active.id?"active":""} onClick={()=>setActiveId(m.id)} key={m.id}>{i+1}</button>)}</div>}<div className="control"><div><span>ZOOM</span><b>{Math.round(active.adjust.zoom*100)}%</b></div><input type="range" min="1" max="2.6" step=".01" value={active.adjust.zoom} onChange={e=>updateAdjust(active.id,{zoom:Number(e.target.value)})}/><div className="range-labels"><ZoomOut size={14}/><ZoomIn size={14}/></div></div><button className="secondary" onClick={()=>updateAdjust(active.id,{zoom:1,x:0,y:0})}>RESET POSITION</button><button className="upload-btn" onClick={()=>photoInput.current?.click()}><Upload/> REPLACE PHOTO</button><input ref={photoInput} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>upload(e.target.files)}/><button className="next-btn" onClick={next}>PREVIEW FRAME <ArrowRight/></button></div><div className="adjust-canvas"><div className="crop-stage"><div className="drag-photo" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} style={{backgroundImage:active.photo?`url(${active.photo})`:undefined,backgroundPosition:`calc(50% + ${active.adjust.x}px) calc(50% + ${active.adjust.y}px)`,backgroundSize:`${active.adjust.zoom*100}%`}}>{!active.photo&&<span>UPLOAD A PHOTO</span>}</div><div className="crop-ring"></div><span className="drag-label">DRAG TO POSITION</span></div></div></main>}
 
-function Preview({members,mode,format,teamName,role,title,busy,download,share,again,home}:any){return <main className="preview-page"><div className="preview-copy"><div className="eyebrow">05 / READY</div><h2>LOOKS<br/><em>GOOD.</em></h2><p>{format==="profile"?"Profile picture":"Social post"} · {mode==="team"?(teamName||"Your crew"):"Solo builder"}</p><button className="primary" disabled={busy} onClick={download}><Download size={18}/>{busy?"MAKING IT…":"DOWNLOAD PNG"}</button><button className="secondary full" onClick={share}>𝕏 SHARE #FRAMEINGOA</button><button className="text-btn" onClick={again}><ArrowLeft size={15}/> ADJUST AGAIN</button><button className="text-btn" onClick={home}>START OVER</button></div><FrameVisual members={members} mode={mode} format={format} teamName={teamName} role={role} title={title}/></main>}
+function Preview({members,mode,format,teamName,role,title,busy,download,share,again,home}:any){return <main className="preview-page"><div className="preview-copy"><div className="eyebrow">05 / READY</div><h2>LOOKS<br/><em>GOOD.</em></h2><p>{format==="profile"?"Profile picture":"Social post"} · {mode==="team"?(teamName||"Your crew"):"Solo builder"}</p><button className="primary" disabled={busy} onClick={download}><Download size={18}/>{busy?"MAKING IT…":"DOWNLOAD PNG"}</button><button className="secondary full" disabled={busy} onClick={share}>𝕏 DOWNLOAD + SHARE TO X</button><p className="share-note">Your PNG downloads first, then X opens with the caption and #FrameInGoa ready. Add the downloaded image to the post.</p><button className="text-btn" onClick={again}><ArrowLeft size={15}/> ADJUST AGAIN</button><button className="text-btn" onClick={home}>START OVER</button></div><FrameVisual members={members} mode={mode} format={format} teamName={teamName} role={role} title={title}/></main>}
 
 function FrameVisual({members,mode,format,teamName,role,title}:any){return <div className={`frame-visual ${format}`}>{mode==="team"&&<div className="frame-team-label">TEAM / {teamName||"CREW"}</div>}<div className="frame-brand">HACKER<br/>HOUSE</div><div className="frame-sun"></div><div className={`frame-photos count-${members.length}`}>{members.slice(0,5).map((m:Member)=><div className="frame-photo" key={m.id} style={{backgroundImage:m.photo?`url(${m.photo})`:undefined,backgroundPosition:`calc(50% + ${m.adjust.x}px) calc(50% + ${m.adjust.y}px)`,backgroundSize:`${m.adjust.zoom*100}%`}}/>)}</div><div className="frame-goa">गोवा</div><div className="frame-copy"><small>{mode==="team"?"TEAM":"NAME"}</small><b>{mode==="team"?(teamName||"YOUR TEAM"):(members[0].name||"YOUR NAME")}</b><small>ROLE</small><b>{role}</b><small>BUILDER TITLE</small><b>{title}</b></div><div className="frame-palm">⌁</div><div className="frame-handle">#FrameInGoa</div><div className="frame-year">2026</div></div>}
 
