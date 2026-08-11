@@ -64,7 +64,9 @@ npm run build
 
 On supported mobile browsers, the generated PNG is passed to the native share sheet so it can be selected in X with the caption. On desktop browsers, X can be opened with prefilled text, but browser security prevents a local file from being attached automatically; the downloaded PNG must be added manually.
 
-The app is ready to deploy as a Next.js project. A live deployment is required by the screening brief before submitting Task 1. Vercel is the planned free deployment target.
+The app is deployed on Vercel: **[Open the live Frame in Goa app](https://frame-in-goa-opal.vercel.app)**.
+
+A live deployment is required by the screening brief before submitting Task 1. Vercel is the free deployment target for this Next.js app.
 
 ### Project pull request
 
