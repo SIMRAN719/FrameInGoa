@@ -1,6 +1,7 @@
 "use client";
 import {useMemo,useRef,useState,useEffect} from "react";
 import {ArrowLeft,ArrowRight,Download,ImagePlus,RefreshCw,Upload,Users,UserRound,ZoomIn,ZoomOut} from "lucide-react";
+import {toPng} from "html-to-image";
 import roleData from "../lib/roles";
 import {makeFrame,Member,ImageAdjust} from "../lib/frame";
 
@@ -24,11 +25,27 @@ export default function App(){
  const [title,setTitle]=useState("THE MODEL WHISPERER");
  const [caption,setCaption]=useState(DEFAULT_CAPTION);
  const [busy,setBusy]=useState(false);
+ const [preparedExport,setPreparedExport]=useState<Blob|null>(null);
  const [uploadError,setUploadError]=useState("");
  const [drag,setDrag]=useState<{x:number;y:number}|null>(null);
  const input=useRef<HTMLInputElement>(null);
+ const exportRef=useRef<HTMLDivElement>(null);
  const active=members.find(m=>m.id===activeId) || members[0];
  const current=useMemo(()=>allRoles.find(x=>x.name===role)!,[role]);
+
+ useEffect(()=>{
+   if(screen!=="preview"||!exportRef.current)return;
+   let cancelled=false;
+   setPreparedExport(null);
+   const timer=window.setTimeout(async()=>{
+     try{
+       const dataUrl=await toPng(exportRef.current!,{pixelRatio:2,cacheBust:true});
+       const blob=await fetch(dataUrl).then(response=>response.blob());
+       if(!cancelled)setPreparedExport(blob);
+     }catch{if(!cancelled)setPreparedExport(null)}
+   },0);
+   return()=>{cancelled=true;window.clearTimeout(timer)};
+ },[screen,mode,format,teamName,role,title,members]);
 
  function reset(){setScreen("home");setMode("solo");setFormat("profile");setMembers([emptyMember(1)]);setActiveId(1);setTeamName("");setRole("AI ENGINEER");setTitle("THE MODEL WHISPERER");setCaption(DEFAULT_CAPTION)}
  function go(next:any){setScreen(next)}
@@ -61,13 +78,26 @@ export default function App(){
  function startDrag(e:React.PointerEvent){if(!active?.photo)return;setDrag({x:e.clientX-active.adjust.x,y:e.clientY-active.adjust.y});(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)}
  function moveDrag(e:React.PointerEvent){if(!drag||!active)return;updateAdjust(active.id,{x:e.clientX-drag.x,y:e.clientY-drag.y})}
  function stopDrag(){setDrag(null)}
- async function renderExport(){return makeFrame({members,displayName:mode==="team"?(teamName||"YOUR TEAM"):(members[0].name||"YOUR NAME"),role,title,mode,format})}
+ async function renderExport(){
+   if(exportRef.current){
+     const dataUrl=await toPng(exportRef.current,{pixelRatio:2,cacheBust:true});
+     return fetch(dataUrl).then(response=>response.blob());
+   }
+   return makeFrame({members,displayName:mode==="team"?(teamName||"YOUR TEAM"):(members[0].name||"YOUR NAME"),role,title,mode,format});
+ }
  function saveBlob(blob:Blob){const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=`frame-in-goa-${format}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
  async function download(){setBusy(true);try{saveBlob(await renderExport())}finally{setBusy(false)}}
  async function share(){
    const builder=mode==="team"?(teamName||"Our team"):(members[0].name||"I");
    const personalized=caption===DEFAULT_CAPTION?`${builder} is framed for Hacker House Goa 2026 🌴\n${role} · ${title}\n#FrameInGoa #HackerHouseGoa`:caption;
    const requiredCaption=personalized.includes("#FrameInGoa")?personalized:`${personalized.trim()}\n#FrameInGoa`;
+   const file=preparedExport?new File([preparedExport],`frame-in-goa-${format}.png`,{type:"image/png"}):null;
+   const nav=navigator as Navigator & {canShare?: (data?:ShareData)=>boolean};
+   if(file&&nav.canShare?.({files:[file]})){
+     setBusy(true);
+     navigator.share({files:[file],title:`${builder} — Frame in Goa`,text:requiredCaption}).catch(error=>{if((error as DOMException)?.name!=="AbortError")console.error(error)}).finally(()=>setBusy(false));
+     return;
+   }
    const shareUrl=`https://x.com/intent/post?text=${encodeURIComponent(requiredCaption)}`;
    const desktopWindow=window.open(shareUrl,"_blank","noopener,noreferrer");
    setBusy(true);
@@ -92,7 +122,7 @@ export default function App(){
   {screen==="people"&&<People mode={mode} members={members} activeId={activeId} setActiveId={setActiveId} teamName={teamName} setTeamName={setTeamName} addMember={addMember} removeMember={removeMember} input={input} upload={upload} uploadError={uploadError} updateMember={updateMember} next={()=>go("craft")}/>} 
   {screen==="craft"&&<Craft role={role} pickRole={pickRole} title={title} randomTitle={randomTitle} current={current} next={()=>go("adjust")}/>}
   {screen==="adjust"&&<Adjust mode={mode} members={members} active={active} setActiveId={setActiveId} updateAdjust={updateAdjust} startDrag={startDrag} moveDrag={moveDrag} stopDrag={stopDrag} photoInput={input} upload={upload} next={()=>go("preview")}/>}
-  {screen==="preview"&&<Preview members={members} mode={mode} format={format} teamName={teamName} setTeamName={setTeamName} role={role} title={title} caption={caption} setCaption={setCaption} updateMember={updateMember} busy={busy} download={download} share={share} again={()=>go("adjust")} home={reset}/>} 
+  {screen==="preview"&&<Preview members={members} mode={mode} format={format} teamName={teamName} setTeamName={setTeamName} role={role} title={title} caption={caption} setCaption={setCaption} updateMember={updateMember} exportRef={exportRef} busy={busy} download={download} share={share} again={()=>go("adjust")} home={reset}/>} 
   <Doodles/>
   <footer><b>BODHIX × HACKER HOUSE GOA 2026</b><span>28—31 OCT · GOA, INDIA</span><span>#FRAMEINGOA</span></footer>
  </div>
@@ -118,11 +148,11 @@ function People({mode,members,activeId,setActiveId,teamName,setTeamName,addMembe
 
 function Craft({role,pickRole,title,randomTitle,current,next}:any){return <main className="wizard-page craft-page"><div className="wizard-title"><div className="eyebrow">03 / CRAFT</div><h2>NAME<br/><em>THE BUILDER.</em></h2><p>Your role shapes the builder title. Keep changing it until it sounds like you.</p></div><label>WHAT DO YOU BUILD?<div className="select-wrap"><select value={role} onChange={e=>pickRole(e.target.value)}>{allRoles.map(r=><option key={r.name}>{r.name}</option>)}</select></div></label><div className="title-card"><span>BUILDER TITLE</span><strong>{title}</strong><button onClick={randomTitle}><RefreshCw size={16}/> CHANGE</button></div><div className="role-note">{current.titles.length} titles in this role family · 100+ roles available</div><button className="next-btn" onClick={next}>ADJUST PHOTO <ArrowRight/></button></main>}
 
-function Adjust({mode,members,active,setActiveId,updateAdjust,startDrag,moveDrag,stopDrag,photoInput,upload,next}:any){return <main className="adjust-page"><div className="adjust-side"><div className="eyebrow">04 / ADJUST</div><h2>GET THE<br/><em>SHOT RIGHT.</em></h2><p>Drag directly on the portrait. Use the slider for scale. Your exact crop is saved to the final export.</p>{mode==="team"&&<div className="adjust-members">{members.map((m:Member,i:number)=><button className={m.id===active.id?"active":""} onClick={()=>setActiveId(m.id)} key={m.id}>{i+1}</button>)}</div>}<div className="control"><div><span>ZOOM</span><b>{Math.round(active.adjust.zoom*100)}%</b></div><input type="range" min="1" max="2.6" step=".01" value={active.adjust.zoom} onChange={e=>updateAdjust(active.id,{zoom:Number(e.target.value)})}/><div className="range-labels"><ZoomOut size={14}/><ZoomIn size={14}/></div></div><button className="secondary" onClick={()=>updateAdjust(active.id,{zoom:1,x:0,y:0})}>RESET POSITION</button><button className="upload-btn" onClick={()=>photoInput.current?.click()}><Upload/> REPLACE PHOTO</button><input ref={photoInput} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>upload(e.target.files)}/><button className="next-btn" onClick={next}>PREVIEW FRAME <ArrowRight/></button></div><div className="adjust-canvas"><div className="crop-stage"><div className="drag-photo" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} style={{backgroundImage:active.photo?`url(${active.photo})`:undefined,backgroundPosition:`calc(50% + ${active.adjust.x}px) calc(50% + ${active.adjust.y}px)`,backgroundSize:`${active.adjust.zoom*100}%`}}>{!active.photo&&<span>UPLOAD A PHOTO</span>}</div><div className="crop-ring"></div><span className="drag-label">DRAG TO POSITION</span></div></div></main>}
+ function Adjust({mode,members,active,setActiveId,updateAdjust,startDrag,moveDrag,stopDrag,photoInput,upload,next}:any){return <main className="adjust-page"><div className="adjust-side"><div className="eyebrow">04 / ADJUST</div><h2>GET THE<br/><em>SHOT RIGHT.</em></h2><p>Drag directly on the portrait. Use the slider for scale. Your exact crop is saved to the final export.</p>{mode==="team"&&<div className="adjust-members">{members.map((m:Member,i:number)=><button className={m.id===active.id?"active":""} onClick={()=>setActiveId(m.id)} key={m.id}>{i+1}</button>)}</div>}<div className="control"><div><span>ZOOM</span><b>{Math.round(active.adjust.zoom*100)}%</b></div><input type="range" min="1" max="2.6" step=".01" value={active.adjust.zoom} onChange={e=>updateAdjust(active.id,{zoom:Number(e.target.value)})}/><div className="range-labels"><ZoomOut size={14}/><ZoomIn size={14}/></div></div><button className="secondary" onClick={()=>updateAdjust(active.id,{zoom:1,x:0,y:0})}>RESET POSITION</button><button className="upload-btn" onClick={()=>photoInput.current?.click()}><Upload/> REPLACE PHOTO</button><input ref={photoInput} hidden type="file" accept="image/*,.heic,.heif" onChange={e=>upload(e.target.files)}/><button className="next-btn" onClick={next}>PREVIEW FRAME <ArrowRight/></button></div><div className="adjust-canvas"><div className="crop-stage"><div className="drag-photo" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} style={{backgroundImage:active.photo?`url(${active.photo})`:undefined,backgroundPosition:`calc(50% + ${active.adjust.x}px) calc(50% + ${active.adjust.y}px)`,backgroundSize:active.adjust.zoom===1?"cover":`auto ${active.adjust.zoom*100}%`}}>{!active.photo&&<span>UPLOAD A PHOTO</span>}</div><div className="crop-ring"></div><span className="drag-label">DRAG TO POSITION</span></div></div></main>}
 
-function Preview({members,mode,format,teamName,setTeamName,role,title,caption,setCaption,updateMember,busy,download,share,again,home}:any){const displayName=mode==="team"?(teamName||"Your crew"):(members[0].name||"Your builder");return <main className="preview-page"><div className="preview-copy"><div className="eyebrow">05 / READY</div><h2>LOOKS<br/><em>GOOD.</em></h2><div className="personal-line"><span>{initials(displayName)}</span><label>{mode==="team"?"TEAM NAME":"YOUR NAME"}<input className="preview-name" value={mode==="team"?teamName:members[0].name} onChange={e=>mode==="team"?setTeamName(e.target.value):updateMember(1,{name:e.target.value})} placeholder={mode==="team"?"YOUR TEAM":"YOUR NAME"}/><small>{role} · {title}</small></label></div><label className="caption-label" htmlFor="share-caption">X CAPTION <span>EDIT BEFORE SHARING</span></label><textarea id="share-caption" className="share-caption" value={caption} onChange={e=>setCaption(e.target.value)} rows={4}/><button className="primary" disabled={busy} onClick={download}><Download size={18}/>{busy?"MAKING IT…":"DOWNLOAD PNG"}</button><button className="secondary full" disabled={busy} onClick={share}>𝕏 DOWNLOAD + SHARE TO X</button><p className="share-note">Your PNG downloads first, then X opens with this caption ready. Add the downloaded image to the post.</p><button className="text-btn" onClick={again}><ArrowLeft size={15}/> ADJUST AGAIN</button><button className="text-btn" onClick={home}>START OVER</button></div><FrameVisual members={members} mode={mode} format={format} teamName={teamName} role={role} title={title}/></main>}
+function Preview({members,mode,format,teamName,setTeamName,role,title,caption,setCaption,updateMember,exportRef,busy,download,share,again,home}:any){const displayName=mode==="team"?(teamName||"Your crew"):(members[0].name||"Your builder");return <main className="preview-page"><div className="preview-copy"><div className="eyebrow">05 / READY</div><h2>LOOKS<br/><em>GOOD.</em></h2><div className="personal-line"><span>{initials(displayName)}</span><label>{mode==="team"?"TEAM NAME":"YOUR NAME"}<input className="preview-name" value={mode==="team"?teamName:members[0].name} onChange={e=>mode==="team"?setTeamName(e.target.value):updateMember(1,{name:e.target.value})} placeholder={mode==="team"?"YOUR TEAM":"YOUR NAME"}/><small>{role} · {title}</small></label></div><label className="caption-label" htmlFor="share-caption">X CAPTION <span>EDIT BEFORE SHARING</span></label><textarea id="share-caption" className="share-caption" value={caption} onChange={e=>setCaption(e.target.value)} rows={4}/><button className="primary" disabled={busy} onClick={download}><Download size={18}/>{busy?"MAKING IT…":"DOWNLOAD PNG"}</button><button className="secondary full" disabled={busy} onClick={share}>𝕏 DOWNLOAD + SHARE TO X</button><p className="share-note">Your PNG downloads first, then X opens with this caption ready. Add the downloaded image to the post.</p><button className="text-btn" onClick={again}><ArrowLeft size={15}/> ADJUST AGAIN</button><button className="text-btn" onClick={home}>START OVER</button></div><FrameVisual exportRef={exportRef} members={members} mode={mode} format={format} teamName={teamName} role={role} title={title}/></main>}
 
-function FrameVisual({members,mode,format,teamName,role,title}:any){const displayName=mode==="team"?(teamName||"YOUR TEAM"):(members[0].name||"YOUR NAME");return <div className={`frame-visual ${format}`}><div className="frame-personal">BUILT BY <strong>{displayName}</strong></div>{mode==="team"&&<div className="frame-team-label">TEAM / {teamName||"CREW"}</div>}<div className="frame-brand">HACKER<br/>HOUSE</div><div className="frame-sun"></div><div className={`frame-photos count-${members.length}`}>{members.slice(0,5).map((m:Member)=><div className="frame-photo" key={m.id} style={{backgroundImage:m.photo?`url(${m.photo})`:undefined,backgroundPosition:`calc(50% + ${m.adjust.x}px) calc(50% + ${m.adjust.y}px)`,backgroundSize:`${m.adjust.zoom*100}%`}}/>)}</div><div className="frame-goa">गोवा</div><div className="frame-copy"><small>{mode==="team"?"TEAM":"NAME"}</small><b>{displayName}</b><small>ROLE</small><b>{role}</b><small>BUILDER TITLE</small><b>{title}</b></div><div className="frame-palm">⌁</div><div className="frame-handle">#FrameInGoa</div><div className="frame-year">2026</div></div>}
+function FrameVisual({exportRef,members,mode,format,teamName,role,title}:any){const displayName=mode==="team"?(teamName||"YOUR TEAM"):(members[0].name||"YOUR NAME");return <div ref={exportRef} className={`frame-visual ${format}`}><div className="frame-personal">BUILT BY <strong>{displayName}</strong></div>{mode==="team"&&<div className="frame-team-label">TEAM / {teamName||"CREW"}</div>}<div className="frame-brand">HACKER<br/>HOUSE</div><div className="frame-sun"></div><div className={`frame-photos count-${members.length}`}>{members.slice(0,5).map((m:Member)=><div className="frame-photo" key={m.id} style={{backgroundImage:m.photo?`url(${m.photo})`:undefined,backgroundPosition:`calc(50% + ${m.adjust.x}px) calc(50% + ${m.adjust.y}px)`,backgroundSize:m.adjust.zoom===1?"cover":`auto ${m.adjust.zoom*100}%`}}/>)}</div><div className="frame-goa">गोवा</div><div className="frame-copy"><small>{mode==="team"?"TEAM":"NAME"}</small><b>{displayName}</b><small>ROLE</small><b>{role}</b><small>BUILDER TITLE</small><b>{title}</b></div><div className="frame-palm">⌁</div><div className="frame-handle">#FrameInGoa</div><div className="frame-year">2026</div></div>}
 
 function WizardTop({screen,onBack}:{screen:string;onBack:()=>void}){return <div className="wizard-top"><button onClick={onBack}><ArrowLeft size={17}/> BACK</button><div>{screen==="setup"?"01":screen==="people"?"02":screen==="craft"?"03":"04"} / FRAME BUILDER</div><span>FRAMEINGOA</span></div>}
 
