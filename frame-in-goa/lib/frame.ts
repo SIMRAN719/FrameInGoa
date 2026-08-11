@@ -37,7 +37,9 @@ export async function makeFrame(d:FrameData){
   const W=d.format==="profile"?1200:1200, H=d.format==="profile"?1200:1500;
   const c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d")!;
   const green="#08643d",deep="#053f29",yellow="#ffd31c",pink="#f24d70",cream="#eef1d7",lime="#b0cd62",blue="#0e7066";
-  g.fillStyle=green;g.fillRect(0,0,W,H);
+  const isPost=d.format==="post";
+  g.fillStyle=isPost?deep:green;g.fillRect(0,0,W,H);
+  if(isPost){g.fillStyle=green;g.fillRect(62,280,W-124,H-540);}
   // quiet paper-like pixel field
   g.globalAlpha=.12;g.fillStyle=lime;
   for(let y=0;y<H;y+=28)for(let x=0;x<W;x+=28)if((x/28+y/28)%4===0)g.fillRect(x+4,y+4,5,5);
@@ -45,12 +47,10 @@ export async function makeFrame(d:FrameData){
   drawPixelBorder(g,W,H);
 
   // editorial top line
-  text(g,d.mode==="team"?"HACKER HOUSE / TEAM ID":"HACKER HOUSE / BUILDER ID",72,86,18,"700 18px monospace",cream);
+  text(g,d.mode==="team"?"HH / TEAM PASS":"HH / BUILDER PASS",72,86,18,"700 18px monospace",cream);
   text(g,d.format==="profile"?"GOA / 2026":"GOA / 28—31 OCT 2026",W-72,86,16,"700 16px monospace",yellow,"right");
 
-  text(g,"HACKER",W/2,155,92,"700 92px Georgia",yellow,"center");
-  text(g,"HOUSE",W/2,242,92,"700 92px Georgia",yellow,"center");
-  text(g,"GOA",W/2,300,17,"700 17px monospace",cream,"center");
+  text(g,"HACKER HOUSE",isPost?92:W/2,isPost?155:165,isPost?56:64,`700 ${isPost?56:64}px Georgia`,yellow,isPost?"left":"center");
 
   // sunset / graphic arc
   g.strokeStyle="#f24d70";g.lineWidth=9;g.beginPath();g.arc(W-120,120,86,Math.PI*.2,Math.PI*1.55);g.stroke();
@@ -58,19 +58,19 @@ export async function makeFrame(d:FrameData){
 
   const isTeam=d.mode==="team" && d.members.length>1;
   if(!isTeam){
-    await drawPhoto(g,d.members[0],W/2,d.format==="profile"?640:690,240);
+    await drawPhoto(g,d.members[0],W/2,d.format==="profile"?555:635,isPost?275:255);
   }else{
     const count=Math.min(d.members.length,5);
     const centers = count===2 ? [[W*.38,690],[W*.62,690]] :
-      count===3 ? [[W*.5,625],[W*.34,775],[W*.66,775]] :
-      count===4 ? [[W*.36,635],[W*.64,635],[W*.36,800],[W*.64,800]] :
-      [[W*.5,610],[W*.31,745],[W*.69,745],[W*.39,865],[W*.61,865]];
-    for(let i=0;i<count;i++) await drawPhoto(g,d.members[i],centers[i][0],centers[i][1],150);
+      count===3 ? [[W*.5,575],[W*.34,720],[W*.66,720]] :
+      count===4 ? [[W*.36,585],[W*.64,585],[W*.36,750],[W*.64,750]] :
+      [[W*.5,560],[W*.31,690],[W*.69,690],[W*.39,825],[W*.61,825]];
+    for(let i=0;i<count;i++) await drawPhoto(g,d.members[i],centers[i][0],centers[i][1],175);
   }
 
   // Goa label
-  rr(g,W-265,(d.format==="profile"?700:760),175,88,24);g.fillStyle=pink;g.fill();g.strokeStyle=cream;g.lineWidth=4;g.stroke();
-  text(g,"गोवा",W-177,(d.format==="profile"?744:804),34,"700 34px Georgia",cream,"center");
+  rr(g,W-265,(d.format==="profile"?665:730),175,88,24);g.fillStyle=pink;g.fill();g.strokeStyle=cream;g.lineWidth=4;g.stroke();
+  text(g,"गोवा",W-177,(d.format==="profile"?709:774),34,"700 34px Georgia",cream,"center");
 
   // beach line art
   g.strokeStyle="#79a95d";g.lineWidth=4;g.beginPath();g.moveTo(70,H-210);g.quadraticCurveTo(W*.28,H-260,W*.52,H-205);g.quadraticCurveTo(W*.75,H-150,W-70,H-205);g.stroke();
@@ -79,14 +79,15 @@ export async function makeFrame(d:FrameData){
   for(let a=-1.3;a<1.4;a+=.55){g.beginPath();g.moveTo(W-80,H-340);g.quadraticCurveTo(W-80+Math.cos(a)*65,H-390+Math.sin(a)*30,W-80+Math.cos(a)*110,H-360+Math.sin(a)*60);g.stroke()}
 
   // information panel
-  const panelY=H-170;
-  g.strokeStyle=lime;g.lineWidth=2;g.beginPath();g.moveTo(70,panelY-25);g.lineTo(W-70,panelY-25);g.stroke();
-  text(g,d.mode==="team"?"TEAM":"NAME",70,panelY+5,16,"700 16px monospace",yellow);
-  text(g,d.displayName.slice(0,26),220,panelY+5,25,"700 25px monospace",cream);
-  text(g,"ROLE",70,panelY+48,16,"700 16px monospace",yellow);
-  text(g,d.role.slice(0,26),220,panelY+48,20,"700 20px monospace",cream);
-  text(g,"BUILDER TITLE",70,panelY+91,16,"700 16px monospace",yellow);
-  text(g,d.title.slice(0,28),220,panelY+91,20,"700 20px monospace",cream);
+  const panelY=H-235;
+  g.fillStyle="#064d31";g.fillRect(62,panelY-28,W-124,150);
+  g.strokeStyle=lime;g.lineWidth=2;g.strokeRect(62,panelY-28,W-124,150);
+  text(g,d.mode==="team"?"TEAM NAME":"BUILDER",88,panelY+4,15,"700 15px monospace",yellow);
+  text(g,d.displayName.slice(0,24),88,panelY+42,42,"700 42px Georgia",cream);
+  text(g,d.role.slice(0,26),88,panelY+86,18,"700 18px monospace",lime);
+  text(g,d.title.slice(0,31),W-88,panelY+86,18,"700 18px monospace",cream,"right");
+  text(g,"ROLE",88,panelY+112,12,"700 12px monospace",yellow);
+  text(g,"BUILDER TITLE",W-88,panelY+112,12,"700 12px monospace",yellow,"right");
   text(g,"#FrameInGoa",70,H-42,17,"700 17px monospace",pink);
   text(g,"2026",W-70,H-42,17,"700 17px monospace",yellow,"right");
 
