@@ -23,6 +23,53 @@ The finished experience must provide a real downloadable image and a working X s
 
 Remember: the task brief requires an X post containing `#FrameInGoa`; submissions without that hashtag are treated as invalid. The deadline in the brief is **11:59 pm, 13 August 2026**.
 
-### Pull request
+## What BodhiX built
 
-The implementation for this task is tracked in [PR #1](https://github.com/SIMRAN719/frame-in-goa/pull/1).
+The current implementation is a Next.js app that turns a photo and builder details into a branded HH Goa identity graphic. It is designed as a fast, no-login flow that works on desktop and mobile.
+
+### Features
+
+- Solo builder and team modes, with up to five builders
+- Builder name and team name inputs
+- Photo upload with JPG, PNG, WebP, and HEIC/HEIF conversion support
+- Portrait positioning and zoom controls for different photo aspect ratios
+- Role selection and generated builder titles
+- Two output formats: square profile picture and vertical social post
+- Live preview with editable builder details and X caption
+- Downloadable 1200px PNG output
+- HH Goa-inspired visual system with editorial typography, tropical accents, Goa artwork, and `#FrameInGoa` branding
+- Native file sharing on supported mobile browsers
+- Prefilled X composer with the required `#FrameInGoa` hashtag
+- BodhiX team branding across the header, hero, footer, and Task 1 identity
+
+### Local development
+
+The application lives in [`frame-in-goa/`](frame-in-goa/).
+
+```bash
+cd frame-in-goa
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+Run the production build with:
+
+```bash
+npm run build
+```
+
+### Sharing and deployment status
+
+On supported mobile browsers, the generated PNG is passed to the native share sheet so it can be selected in X with the caption. On desktop browsers, X can be opened with prefilled text, but browser security prevents a local file from being attached automatically; the downloaded PNG must be added manually.
+
+The app is ready to deploy as a Next.js project. A live deployment is required by the screening brief before submitting Task 1. Vercel is the planned free deployment target.
+
+### Project pull request
+
+The current implementation was consolidated in [PR #3](https://github.com/SIMRAN719/frame-in-goa/pull/3), which has been merged into `main`.
+
+## Team
+
+This Task 1 submission is built by **BodhiX**.
