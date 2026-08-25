@@ -1,3 +1,135 @@
+# FrameInGoa
+
+FrameInGoa is a web application for creating personalized builder identity frames from profile photos. Users can create individual or team frames, customize their builder identity, adjust their photos, preview the result, and export a high-resolution PNG for sharing.
+
+## Features
+
+* Solo and team frame creation
+* Support for up to five team members
+* JPG, PNG, WebP, and HEIC/HEIF photo support
+* Photo positioning, zoom, and reset controls
+* Role-based builder title generation
+* Profile and social post formats
+* Live preview before export
+* High-resolution PNG generation
+* X sharing with a pre-filled caption
+* Native file sharing on supported mobile browsers
+* Fully client-side image processing
+
+## How It Works
+
+```text
+Select Mode
+     |
+Add Photo and Details
+     |
+Select Role and Title
+     |
+Adjust Photo
+     |
+Preview Frame
+     |
+Export or Share
+```
+
+The application uses React state to manage the creation flow. User information and photo adjustments are passed to the frame renderer, which generates the final image using the Canvas API.
+
+## Architecture
+
+```text
+Next.js
+   |
+   +-- React UI
+   |      |
+   |      +-- Creation Flow
+   |      +-- Photo Controls
+   |      +-- Role Selection
+   |      +-- Preview
+   |
+   +-- Role Data
+   |
+   +-- Canvas Frame Renderer
+              |
+              +-- PNG Export
+              +-- Sharing
+```
+
+## Project Structure
+
+```text
+frame-in-goa/
+├── app/
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   └── App.tsx
+├── lib/
+│   ├── frame.ts
+│   └── roles.ts
+├── next.config.mjs
+├── package.json
+├── tsconfig.json
+└── types.d.ts
+```
+
+### Core Files
+
+| File                 | Purpose                              |
+| -------------------- | ------------------------------------ |
+| `app/page.tsx`       | Application entry point              |
+| `components/App.tsx` | Main UI and creation workflow        |
+| `lib/roles.ts`       | Builder roles and title data         |
+| `lib/frame.ts`       | Canvas-based frame generation        |
+| `app/globals.css`    | Global styling and responsive layout |
+
+## Getting Started
+
+### Prerequisites
+
+* Node.js 18+
+* npm
+
+### Installation
+
+```bash
+git clone <repository-url>
+cd frame-in-goa
+npm install
+```
+
+### Development
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+### Production
+
+```bash
+npm run build
+npm run start
+```
+
+The application supports:
+
+* Square profile frames
+* Vertical social post frames
+
+## Sharing
+
+The generated frame can be downloaded directly. On supported mobile browsers, the application can also use the native sharing interface. For X, the application prepares a share URL with a pre-filled caption. Due to browser security restrictions, desktop browsers cannot automatically attach a locally generated image to an X post.
+
+The app is deployed on Vercel: **[Open the live Frame in Goa app](https://frame-in-goa-opal.vercel.app)**.
+
+## License
+
+This project was developed for Hacker House Goa 2026 by BodhiX.
+
+
+<!--
 # Frame in Goa
 
 ## Hacker House Goa 2026 — Open Trial 1
@@ -75,3 +207,4 @@ The current implementation was consolidated in [PR #3](https://github.com/SIMRAN
 ## Team
 
 This Task 1 submission is built by **BodhiX**.
+-->
